@@ -88,7 +88,7 @@ async def speak(req: TTSRequest):
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="`text` must be non-empty")
     
-    tts = gTTS(text=req.text, lang='en', slow=False)
+    tts = gTTS(text=req.text, lang="en", tld="co.uk", slow=False)
     mp3_fp = BytesIO()
     tts.write_to_fp(mp3_fp)
     mp3_fp.seek(0)
