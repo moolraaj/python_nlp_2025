@@ -1,0 +1,59 @@
+[
+  {
+    "id": "1",
+    "tags": ["girl"],
+    "animation_type_id": "1",
+    "background_id": "3",
+    "gif_url": "https://media.giphy.com/media/l0ExdMHUDKteztyfe/giphy.gif"
+  },
+  {
+    "id": "2",
+    "tags": ["boy"],
+    "animation_type_id": "1",
+    "background_id": "4",
+    "gif_url": "https://media.giphy.com/media/3o6Zt6ML6BklcajjsA/giphy.gif"
+  },
+  {
+    "id": "3",
+    "tags": ["nurse"],
+    "animation_type_id": "1",
+    "background_id": "2",
+    "gif_url": "https://media.giphy.com/media/3o6ZtpxSZbQRRnwCKQ/giphy.gif"
+  },
+  {
+    "id": "4",
+    "tags": ["doctor"],
+    "animation_type_id": "1",
+    "background_id": "2",
+    "gif_url": "https://media.giphy.com/media/3o7aD6l658brS6jguk/giphy.gif"
+  },
+  {
+    "id": "5",
+    "tags": ["pilot"],
+    "animation_type_id": "1",
+    "background_id": "6",
+    "gif_url": "https://media.giphy.com/media/3o7aTpNpitGkzT0woh/giphy.gif"
+  },
+  {
+    "id": "6",
+    "tags": ["dancer"],
+    "animation_type_id": "4",
+    "background_id": "5",
+    "gif_url": "https://media.giphy.com/media/3o6ZsY4DjOO5JY3LQw/giphy.gif"
+  },
+  {
+    "id": "7",
+    "tags": ["singer"],
+    "animation_type_id": "4",
+    "background_id": "5",
+    "gif_url": "https://media.giphy.com/media/3o6ZsWRqQKwzV0LtiI/giphy.gif"
+  },
+  {
+    "id": "8",
+    "tags": ["teacher"],
+    "animation_type_id": "6",
+    "background_id": "7",
+    "gif_url": "https://media.giphy.com/media/3o6Zt6HjI1h4kYlpzG/giphy.gif"
+  }
+   
+]
