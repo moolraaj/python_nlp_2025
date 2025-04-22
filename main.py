@@ -13,11 +13,15 @@ app = FastAPI()
 
  
 app.add_middleware(
-  CORSMiddleware,
-  allow_origins=["http://localhost:3000", "http://localhost:4500","https://editor-sigma-olive.vercel.app"],
-  allow_credentials=True,
-  allow_methods=["*"],
-  allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:4500",
+        "https://editor-2025-part-2.vercel.app"  
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
