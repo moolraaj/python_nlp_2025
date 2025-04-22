@@ -7,13 +7,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from embeddings import find_assets, suggest_random
 from gtts import gTTS
-
+import uvicorn
+import os
 app = FastAPI()
 
  
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["http://localhost:4500"],
+  allow_origins=["http://localhost:3000", "http://localhost:4500","https://editor-sigma-olive.vercel.app"],
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],
@@ -49,7 +50,7 @@ async def suggest():
     text, assets = suggest_random()
     return {"suggestion": text, "assets": assets}
 
-@app.get("/health", tags=["health"])
+@app.get("/", tags=["health"])
 async def health_check():
     return {"status": "ok", "message": "API is healthy"}
 
@@ -66,3 +67,7 @@ async def speak(req: TTSRequest):
     tts.write_to_fp(mp3_fp)
     mp3_fp.seek(0)
     return StreamingResponse(mp3_fp, media_type="audio/mpeg")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))       
+    uvicorn.run(app, host="0.0.0.0", port=port)
