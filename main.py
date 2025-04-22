@@ -1,28 +1,24 @@
- 
+from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from embeddings import find_assets, suggest_random
+from gtts import gTTS
+from gtts.tts import gTTSError
 import uvicorn
 import os
-import tempfile
-from pathlib import Path
-import pyttsx3
 
- 
 app = FastAPI()
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:4500",
-    "https://editor-2025-part-2.vercel.app",
-]
-
+ 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:4500",
+        "https://editor-2025-part-2.vercel.app"
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -43,7 +39,7 @@ async def search(req: MultiSearchRequest):
     results = []
     for text in req.texts:
         if not text.strip():
-            results.append({"error": "Text is empty"})
+            results.append({'error': 'Text is empty'})
             continue
         assets = find_assets(text)
         results.append(assets)
@@ -58,36 +54,27 @@ async def suggest():
 async def health_check():
     return {"status": "ok", "message": "API is healthy"}
 
- 
-engine = pyttsx3.init()
- 
-engine.setProperty("rate", 150)
-engine.setProperty("volume", 1.0)
-
- 
 @app.post("/speak", response_class=StreamingResponse)
 async def speak(req: TTSRequest):
-    text = req.text.strip()
-    if not text:
+    """
+    Generates spoken audio for the given text using Google TTS and returns an MP3 stream.
+    """
+    if not req.text.strip():
         raise HTTPException(status_code=400, detail="`text` must be non-empty")
 
-  
-    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    tmp_path = Path(tmp.name)
-    tmp.close()
+    mp3_fp = BytesIO()
+    try:
+        tts = gTTS(text=req.text, lang="en", tld="co.uk", slow=False)
+        tts.write_to_fp(mp3_fp)
+    except gTTSError:
+       
+        raise HTTPException(
+            status_code=503,
+            detail="TTS service unavailable (rate‑limit hit). Please try again later."
+        )
 
- 
-    engine.save_to_file(text, str(tmp_path))
-    engine.runAndWait()
-
-  
-    def iterfile():
-        with tmp_path.open("rb") as f:
-            yield from f
-        tmp_path.unlink()
-
-    return StreamingResponse(iterfile(), media_type="audio/wav")
-
+    mp3_fp.seek(0)
+    return StreamingResponse(mp3_fp, media_type="audio/mpeg")
 
  
 if __name__ == "__main__":
