@@ -4,26 +4,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from embeddings import find_assets, suggest_random
-from gtts import gTTS
-from gtts.tts import gTTSError
 import uvicorn
 import os
+import tempfile
+from pathlib import Path
+import pyttsx3
 
+# --- App setup ---
 app = FastAPI()
 
- 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:4500",
+    "https://editor-2025-part-2.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:4500",
-        "https://editor-2025-part-2.vercel.app"
-    ],
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
- 
+# --- Models ---
 class SearchRequest(BaseModel):
     text: str
 
@@ -33,13 +37,13 @@ class TTSRequest(BaseModel):
 class MultiSearchRequest(BaseModel):
     texts: list[str]
 
- 
+# --- Embed endpoints ---
 @app.post("/search")
 async def search(req: MultiSearchRequest):
     results = []
     for text in req.texts:
         if not text.strip():
-            results.append({'error': 'Text is empty'})
+            results.append({"error": "Text is empty"})
             continue
         assets = find_assets(text)
         results.append(assets)
@@ -54,29 +58,38 @@ async def suggest():
 async def health_check():
     return {"status": "ok", "message": "API is healthy"}
 
+# --- Initialize pyttsx3 engine once ---
+engine = pyttsx3.init()
+# Optional: tweak rate/volume/voice here
+engine.setProperty("rate", 150)
+engine.setProperty("volume", 1.0)
+
+# --- TTS endpoint using pyttsx3 ---
 @app.post("/speak", response_class=StreamingResponse)
 async def speak(req: TTSRequest):
-    """
-    Generates spoken audio for the given text using Google TTS and returns an MP3 stream.
-    """
-    if not req.text.strip():
+    text = req.text.strip()
+    if not text:
         raise HTTPException(status_code=400, detail="`text` must be non-empty")
 
-    mp3_fp = BytesIO()
-    try:
-        tts = gTTS(text=req.text, lang="en", tld="co.uk", slow=False)
-        tts.write_to_fp(mp3_fp)
-    except gTTSError:
-       
-        raise HTTPException(
-            status_code=503,
-            detail="TTS service unavailable (rate‑limit hit). Please try again later."
-        )
+    # Create a temp WAV file
+    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    tmp_path = Path(tmp.name)
+    tmp.close()
 
-    mp3_fp.seek(0)
-    return StreamingResponse(mp3_fp, media_type="audio/mpeg")
+    # Synthesize speech (blocking)
+    engine.save_to_file(text, str(tmp_path))
+    engine.runAndWait()
 
- 
+    # Stream it back and delete afterwards
+    def iterfile():
+        with tmp_path.open("rb") as f:
+            yield from f
+        tmp_path.unlink()
+
+    return StreamingResponse(iterfile(), media_type="audio/wav")
+
+
+# --- Run ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
