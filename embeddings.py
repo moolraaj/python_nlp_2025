@@ -45,23 +45,24 @@ def extract_keywords(text: str):
  
 def find_assets(query: str):
     kws = extract_keywords(query)
-    animations = [a for a in ANIM_TYPES    if a.get("name") in kws]
-    backgrounds = [b for b in BACKGROUNDS if b.get("name") in kws]
-    gifs = [g for g in GIFS            if any(tag in kws for tag in g.get('tags', []))]
 
+    animations = [a for a in ANIM_TYPES if a.get("name") in kws]
+    backgrounds = [b for b in BACKGROUNDS if b.get("name") in kws]
+    gifs = [g for g in GIFS if any(tag in kws for tag in g.get('tags', []))]
+
+    
     if not (animations or backgrounds or gifs):
-        return {
-            'keywords':    kws,
-            'animations':  [DEFAULT_SCENE],
-            'backgrounds': [DEFAULT_SCENE],
-            'gifs':        [DEFAULT_SCENE]
-        }
+        animations = [a for a in ANIM_TYPES if a.get("name") == "default"]
+        backgrounds = [b for b in BACKGROUNDS if b.get("name") == "default"]
+        gifs = [g for g in GIFS if "default" in g.get("tags", [])]
+
     return {
-        'keywords':    kws,
-        'animations':  animations,
+        'keywords': kws,
+        'animations': animations,
         'backgrounds': backgrounds,
-        'gifs':        gifs
+        'gifs': gifs
     }
+
 
 
 def suggest_random():

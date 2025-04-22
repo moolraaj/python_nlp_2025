@@ -4,56 +4,63 @@
     "tags": ["girl"],
     "animation_type_id": "1",
     "background_id": "3",
-    "gif_url": "https://media.giphy.com/media/l0ExdMHUDKteztyfe/giphy.gif"
+    "gif_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNpPh-VPUEKHwJPVA16XfoXhA9WYaUwLcxFQ&s"
   },
   {
     "id": "2",
     "tags": ["boy"],
     "animation_type_id": "1",
     "background_id": "4",
-    "gif_url": "https://media.giphy.com/media/3o6Zt6ML6BklcajjsA/giphy.gif"
+    "gif_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0ZP9zTf75vBmTD9BJWQmf3DjamXGuvzw44w&s"
   },
   {
     "id": "3",
     "tags": ["nurse"],
     "animation_type_id": "1",
     "background_id": "2",
-    "gif_url": "https://media.giphy.com/media/3o6ZtpxSZbQRRnwCKQ/giphy.gif"
+    "gif_url": "https://t4.ftcdn.net/jpg/02/11/38/55/360_F_211385552_SVDPehUY2L99HQTRYkY9Ya9zO9Zw5FNO.jpg"
   },
   {
     "id": "4",
     "tags": ["doctor"],
     "animation_type_id": "1",
     "background_id": "2",
-    "gif_url": "https://media.giphy.com/media/3o7aD6l658brS6jguk/giphy.gif"
+    "gif_url": "https://static.vecteezy.com/system/resources/thumbnails/026/375/249/small/ai-generative-portrait-of-confident-male-doctor-in-white-coat-and-stethoscope-standing-with-arms-crossed-and-looking-at-camera-photo.jpg"
   },
   {
     "id": "5",
     "tags": ["pilot"],
     "animation_type_id": "1",
     "background_id": "6",
-    "gif_url": "https://media.giphy.com/media/3o7aTpNpitGkzT0woh/giphy.gif"
+    "gif_url": "https://www.shutterstock.com/image-photo/cheerful-young-man-airline-worker-260nw-1815171710.jpg"
   },
   {
     "id": "6",
     "tags": ["dancer"],
     "animation_type_id": "4",
     "background_id": "5",
-    "gif_url": "https://media.giphy.com/media/3o6ZsY4DjOO5JY3LQw/giphy.gif"
+    "gif_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRR8KzRt4DXkP3iRov0YFaecHkuzhnCU6XCYQ&s"
   },
   {
     "id": "7",
     "tags": ["singer"],
     "animation_type_id": "4",
     "background_id": "5",
-    "gif_url": "https://media.giphy.com/media/3o6ZsWRqQKwzV0LtiI/giphy.gif"
+    "gif_url": "https://www.topteen.in/media/upload/career/media/None/singing-basics.jpg"
   },
   {
     "id": "8",
     "tags": ["teacher"],
     "animation_type_id": "6",
     "background_id": "7",
-    "gif_url": "https://media.giphy.com/media/3o6Zt6HjI1h4kYlpzG/giphy.gif"
+    "gif_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSQ-iFfSh4qabfaka6Jy-Yo19DbrtTTQjERw&s"
+  },
+  {
+    "id": "9",
+    "tags": ["default"],
+    "animation_type_id": "9",
+    "background_id": "9",
+    "gif_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLvBwmQ18IqM3Nz6rnTAti39z9UcbJ6NcSvw&s"
   }
    
 ]

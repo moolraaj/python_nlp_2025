@@ -1,45 +1,8 @@
-# from fastapi import FastAPI, HTTPException
-# from fastapi.middleware.cors import CORSMiddleware
-# from pydantic import BaseModel
-# from embeddings import find_assets, suggest_random
-
-# app = FastAPI()
-
- 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:4500"],
-#     allow_methods=["POST","GET"],
-#     allow_headers=["*"],
-# )
-
-# class SearchRequest(BaseModel):
-#     text: str
-
-# @app.post("/search")
-# async def search(req: SearchRequest):
-#     if not req.text.strip():
-#         raise HTTPException(status_code=400, detail="`text` must be non-empty")
-#     return find_assets(req.text)
-
-# @app.get("/suggest", tags=["feedback"])
-# async def suggest():
-#     """
-#     Returns a random valid example sentence and corresponding assets
-#     when user input has no matches.
-#     """
-#     text, assets = suggest_random()
-#     return {"suggestion": text, "assets": assets}
-
-# @app.get("/health", tags=["health"])
-# async def health_check():
-#     return {"status": "ok", "message": "API is healthy"}
-
-
 
 from io import BytesIO
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from embeddings import find_assets, suggest_random
@@ -50,9 +13,10 @@ app = FastAPI()
  
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4500"],
-    allow_methods=["POST", "GET"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:4500","http://localhost:3000"],  
+    allow_credentials=True,
+    allow_methods=["*"],                       
+    allow_headers=["*"],                       
 )
 
 class SearchRequest(BaseModel):
@@ -61,11 +25,19 @@ class SearchRequest(BaseModel):
 class TTSRequest(BaseModel):
     text: str
 
+class MultiSearchRequest(BaseModel):
+    texts: list[str]
+
 @app.post("/search")
-async def search(req: SearchRequest):
-    if not req.text.strip():
-        raise HTTPException(status_code=400, detail="`text` must be non-empty")
-    return find_assets(req.text)
+async def search(req: MultiSearchRequest):
+    results = []
+    for text in req.texts:
+        if not text.strip():
+            results.append({'error': 'Text is empty'})
+            continue
+        assets = find_assets(text)
+        results.append(assets)
+    return results
 
 @app.get("/suggest", tags=["feedback"])
 async def suggest():
