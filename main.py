@@ -1,4 +1,4 @@
-from io import BytesIO
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 import pyttsx3
 
-# --- App setup ---
+ 
 app = FastAPI()
 
 origins = [
@@ -26,8 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# --- Models ---
+ 
 class SearchRequest(BaseModel):
     text: str
 
@@ -37,7 +36,7 @@ class TTSRequest(BaseModel):
 class MultiSearchRequest(BaseModel):
     texts: list[str]
 
-# --- Embed endpoints ---
+ 
 @app.post("/search")
 async def search(req: MultiSearchRequest):
     results = []
@@ -58,29 +57,29 @@ async def suggest():
 async def health_check():
     return {"status": "ok", "message": "API is healthy"}
 
-# --- Initialize pyttsx3 engine once ---
+ 
 engine = pyttsx3.init()
-# Optional: tweak rate/volume/voice here
+ 
 engine.setProperty("rate", 150)
 engine.setProperty("volume", 1.0)
 
-# --- TTS endpoint using pyttsx3 ---
+ 
 @app.post("/speak", response_class=StreamingResponse)
 async def speak(req: TTSRequest):
     text = req.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="`text` must be non-empty")
 
-    # Create a temp WAV file
+  
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     tmp_path = Path(tmp.name)
     tmp.close()
 
-    # Synthesize speech (blocking)
+ 
     engine.save_to_file(text, str(tmp_path))
     engine.runAndWait()
 
-    # Stream it back and delete afterwards
+  
     def iterfile():
         with tmp_path.open("rb") as f:
             yield from f
@@ -89,7 +88,7 @@ async def speak(req: TTSRequest):
     return StreamingResponse(iterfile(), media_type="audio/wav")
 
 
-# --- Run ---
+ 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
