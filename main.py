@@ -19,7 +19,6 @@ app.add_middleware(
         "http://localhost:4500",
         "https://editor-2025-part-2.vercel.app"  
     ],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
