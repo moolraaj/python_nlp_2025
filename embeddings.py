@@ -52,12 +52,6 @@ def find_assets(query: str):
     backgrounds = [b for b in BACKGROUNDS if b.get("name") in kws]
     gifs = [g for g in GIFS if any(tag in kws for tag in g.get('tags', []))]
 
-    
-    if not (animations or backgrounds or gifs):
-        animations = [a for a in ANIM_TYPES if a.get("name") == "default"]
-        backgrounds = [b for b in BACKGROUNDS if b.get("name") == "default"]
-        gifs = [g for g in GIFS if "default" in g.get("tags", [])]
-
     return {
         'keywords': kws,
         'animations': animations,
@@ -66,15 +60,16 @@ def find_assets(query: str):
     }
 
 
-
 def suggest_random():
-    candidates = [g for g in GIFS if g.get('id') != 'default']
-    chosen = random.choice(candidates) if candidates else DEFAULT_SCENE
-    tags = chosen.get('tags', [])
-    char = tags[0] if tags else 'character'
-    anim = next((a['name'] for a in ANIM_TYPES if a['id'] == chosen.get('animation_type_id')), 'walking')
-    bg = next((b['name'] for b in BACKGROUNDS if b['id'] == chosen.get('background_id')), 'temple')
-    suggestion_text = f"Try something like this -->  a {char} {anim} to the {bg}"
+    all_tags = [tag for g in GIFS for tag in g.get("tags", [])]
+    char = random.choice(all_tags) if all_tags else "character"
+    anims = [a["name"] for a in ANIM_TYPES]
+    anim = random.choice(anims) if anims else "walking"
+    bgs = [b["name"] for b in BACKGROUNDS]
+    bg = random.choice(bgs) if bgs else "scene"
+    suggestion_text = (
+        f" keywords to make your own storyline :     {char}, {anim}, {bg}."
+    )
     suggestion_assets = find_assets(suggestion_text)
     return suggestion_text, suggestion_assets
 

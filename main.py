@@ -3,13 +3,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from embeddings import find_assets, suggest_random
+from embeddings import find_assets,suggest_random
 from gtts import gTTS
 from gtts.tts import gTTSError
 import uvicorn
 import zipfile
 from io import BytesIO
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse,JSONResponse
 import os
 import requests
 from reportlab.pdfgen import canvas
@@ -45,19 +45,33 @@ class MultiSearchRequest(BaseModel):
  
 @app.post("/search")
 async def search(req: MultiSearchRequest):
-    results = []
-    for text in req.texts:
+    results: list[dict] = []
+    suggestions: dict[int, dict] = {}
+
+    for idx, text in enumerate(req.texts):
         if not text.strip():
-            results.append({'error': 'Text is empty'})
+            results.append({"error": "Text is empty"})
+            s_text, s_assets = suggest_random()
+            suggestions[idx] = {"suggestion": s_text, "assets": s_assets}
             continue
+
         assets = find_assets(text)
         results.append(assets)
-    return results
 
-@app.get("/suggest", tags=["feedback"])
-async def suggest():
-    text, assets = suggest_random()
-    return {"suggestion": text, "assets": assets}
+      
+        if not (assets["animations"] or assets["backgrounds"] or assets["gifs"]):
+            s_text, s_assets = suggest_random()
+            suggestions[idx] = {"suggestion": s_text, "assets": s_assets}
+
+    response = {"results": results}
+    if suggestions:
+        response["suggestions"] = suggestions
+    return JSONResponse(response)
+
+
+
+
+
 
 @app.get("/", tags=["health"])
 async def health_check():
