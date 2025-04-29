@@ -27,3 +27,6 @@ huggingface-hub==0.30.2
 cloudinary==1.44.0
 
 python-multipart==0.0.20
+
+python-dotenv==1.1.0
+gTTS==2.5.4
