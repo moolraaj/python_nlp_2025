@@ -1,34 +1,16 @@
-# Web framework
 fastapi==0.115.12
-uvicorn==0.34.2
-
-gTTS==2.5.4
-
-# Data validation
-pydantic==2.11.3
-
-# Environment variable loader
 python-dotenv==1.1.0
-
-# MongoDB driver + async client
-pymongo==4.12.0
-motor==3.7.0
-
-# NLP / embeddings
-sentence-transformers==4.1.0
-transformers==4.51.3
-torch==2.6.0
-nltk==3.9.1
-
-# HTTP requests
-requests==2.32.3
-
-# (Optional) if interacting with Hugging Face Hub
-huggingface-hub==0.30.2
-
-cloudinary==1.44.0
-
+pydantic==2.11.3
 python-multipart==0.0.20
 
-python-dotenv==1.1.0
+motor==3.7.0
+cloudinary==1.44.0
 
+gTTS==2.5.4
+requests==2.32.3
+reportlab==4.4.0
+
+nltk==3.9.1
+numpy==2.2.5
+scikit-learn==1.6.1
+sentence-transformers==4.1.0
