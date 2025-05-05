@@ -14,16 +14,14 @@ from routers._semantic   import encode
 import asyncio
 
 app = FastAPI()
-logger = logging.getLogger("uvicorn.error")
-
- 
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+  CORSMiddleware,
+  allow_origins=["*"],
+  allow_methods=["*"],
+  allow_headers=["*"],
 )
 
+logger = logging.getLogger("uvicorn.error")
 async def backfill_embeddings():
   
     async for doc in db["backgrounds"].find({"embedding": {"$exists": False}}):
@@ -33,8 +31,6 @@ async def backfill_embeddings():
             {"_id": doc["_id"]},
             {"$set": {"embedding": emb}}
         )
-
- 
     async for doc in db["svgs"].find({"embedding": {"$exists": False}}):
         tags = [str(tag).lower() for tag in doc.get("tags", [])]
         tags_text = " ".join(tags)
@@ -43,8 +39,6 @@ async def backfill_embeddings():
             {"_id": doc["_id"]},
             {"$set": {"embedding": emb}}
         )
-
-    
     async for doc in db["types"].find({"embedding": {"$exists": False}}):
         name = doc.get("name", "")
         emb = encode(name.lower()).tolist()
@@ -53,17 +47,13 @@ async def backfill_embeddings():
             {"$set": {"embedding": emb}}
         )
 
-
 @app.on_event("startup")
 async def startup():
-   
     try:
         await db.client.admin.command("ping")
         logger.info("✅ MongoDB connected")
     except Exception as e:
         logger.error("❌ MongoDB connection failed: %s", e)
-
-   
     await backfill_embeddings()
     logger.info("🔄 Embedding backfill done")
 
@@ -74,10 +64,10 @@ app.include_router(types_router)
 app.include_router(search_router)         
 app.include_router(media_router)          
 
+
 @app.get("/", tags=["health"])
 async def health_check():
     return {"status":"ok","message":"API is healthy"}
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
