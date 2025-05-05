@@ -12,9 +12,9 @@ from typing import List, Set
 from database import db
 
 # one-time downloads; remove or move to startup if you prefer
-nltk.download('punkt', quiet=True)
-nltk.download('averaged_perceptron_tagger', quiet=True)
-nltk.download('wordnet', quiet=True)
+nltk.download('punkt_tab')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
