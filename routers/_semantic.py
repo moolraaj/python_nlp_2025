@@ -3,87 +3,154 @@
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet
 
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
-from typing import List, Set
+from typing import List, Set, Dict, Any
+import logging
 
 from database import db
 
-# one-time downloads; remove or move to startup if you prefer
-nltk.download('punkt_tab')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-nltk.download('averaged_perceptron_tagger_eng')
-nltk.download('universal_tagset')
-nltk.download('punkt')
-nltk.download('wordnet')
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Initialize NLTK components
+nltk.download('punkt', quiet=True)
+nltk.download('averaged_perceptron_tagger', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('omw-1.4', quiet=True)
+
+lemmatizer = WordNetLemmatizer()
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
+def get_wordnet_pos(treebank_tag: str) -> str:
+    """Map treebank POS tags to WordNet POS tags"""
+    if treebank_tag.startswith('J'):
+        return wordnet.ADJ
+    elif treebank_tag.startswith('V'):
+        return wordnet.VERB
+    elif treebank_tag.startswith('N'):
+        return wordnet.NOUN
+    elif treebank_tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN
+
 def encode(text: str) -> np.ndarray:
+    """Encode text into embedding vector"""
     return model.encode([text], convert_to_numpy=True)[0]
 
 def top_k_matches(
     query_emb: np.ndarray,
-    docs: List[dict],
+    docs: List[Dict[str, Any]],
     emb_field: str,
     k: int = 3,
     threshold: float = 0.5
-) -> List[dict]:
-    valid = [d for d in docs if emb_field in d and isinstance(d[emb_field], (list, tuple))]
+) -> List[Dict[str, Any]]:
+    """Find top k matching documents based on cosine similarity"""
+    valid = [d for d in docs if emb_field in d and isinstance(d[emb_field], (list, np.ndarray))]
     if not valid:
         return []
+    
     embs = np.array([d[emb_field] for d in valid])
     sims = cosine_similarity([query_emb], embs)[0]
     paired = sorted(zip(sims, valid), key=lambda x: x[0], reverse=True)
+    
+    # Log top matches for debugging
+    logger.debug(f"Top matches before threshold (k={k}, threshold={threshold}):")
+    for sim, doc in paired[:5]:
+        logger.debug(f"  Similarity: {sim:.3f} - Doc: {doc.get('name', doc.get('svg_url', 'Unknown'))}")
+    
     return [doc for sim, doc in paired if sim >= threshold][:k]
 
-def extract_keywords(text: str, pos_set: Set[str] = {"NOUN", "PROPN", "VERB"}) -> List[str]:
+def extract_keywords(text: str, pos_set: Set[str] = {"NOUN", "PROPN", "VERB", "ADJ"}) -> List[str]:
+    """Extract and lemmatize keywords from text"""
     tokens = word_tokenize(text)
-    tagged = pos_tag(tokens, tagset="universal")
-    return [tok for tok, tag in tagged if tag in pos_set]
+    tagged = pos_tag(tokens)
+    
+    keywords = []
+    for tok, tag in tagged:
+        pos = get_wordnet_pos(tag)
+        lemma = lemmatizer.lemmatize(tok.lower(), pos=pos)
+        universal_tag = nltk.map_tag('en-ptb', 'universal', tag)
+        
+        if universal_tag in pos_set:
+            keywords.append(lemma)
+    
+    # Log extracted keywords for debugging
+    logger.debug(f"Extracted keywords: {keywords}")
+    return keywords
 
-def merge_and_dedupe(sem: List[dict], kw: List[dict], key: str, k: int) -> List[dict]:
+def merge_and_dedupe(
+    sem: List[Dict[str, Any]],
+    kw: List[Dict[str, Any]],
+    key: str,
+    k: int,
+    priority: str = 'semantic'
+) -> List[Dict[str, Any]]:
+    """Merge semantic and keyword results with deduplication"""
     merged = []
     seen = set()
-    for d in sem + kw:
+    
+    # Determine merge order based on priority
+    first, second = (sem, kw) if priority == 'semantic' else (kw, sem)
+    
+    for d in first + second:
         val = d.get(key)
         if val and val not in seen:
             seen.add(val)
             merged.append(d)
         if len(merged) >= k:
             break
+    
     return merged
 
 async def find_assets(
     text: str,
     k: int = 3,
-    threshold: float = 0.5
-) -> dict:
-    # load all docs once per call
-    bg_docs   = [doc async for doc in db["backgrounds"].find()]
-    svg_docs  = [doc async for doc in db["svgs"].find()]
+    threshold: float = 0.5,
+    keyword_threshold: int = 2
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Find matching assets using both semantic search and keyword matching"""
+    if not text.strip():
+        return {"backgrounds": [], "gifs": [], "animations": []}
+    
+    logger.info(f"Searching for: '{text}'")
+    
+    # Load all documents
+    bg_docs = [doc async for doc in db["backgrounds"].find()]
+    svg_docs = [doc async for doc in db["svgs"].find()]
     type_docs = [doc async for doc in db["types"].find()]
 
-    # semantic search
-    q_emb   = encode(text)
-    sem_bg  = top_k_matches(q_emb, bg_docs,   "embedding", k, threshold)
-    sem_sv  = top_k_matches(q_emb, svg_docs,  "embedding", k, threshold)
-    sem_tp  = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
+    # Semantic search
+    q_emb = encode(text)
+    sem_bg = top_k_matches(q_emb, bg_docs, "embedding", k, threshold)
+    sem_sv = top_k_matches(q_emb, svg_docs, "embedding", k, threshold)
+    sem_tp = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
 
-    # keyword fallback (always computed)
-    kws = [w.lower() for w in extract_keywords(text)]
-    kw_bg = [d for d in bg_docs   if any(kw in d["name"].lower()      for kw in kws)]
-    kw_sv = [d for d in svg_docs  if any(kw == tag.lower()             for tag in d.get("tags", []) for kw in kws)]
-    kw_tp = [d for d in type_docs if any(kw in d["name"].lower()      for kw in kws)]
+    # Keyword extraction and matching
+    kws = extract_keywords(text)
+    logger.debug(f"Final keywords used for matching: {kws}")
+    
+    # Only use keyword matching if we have enough keywords
+    if len(kws) >= keyword_threshold:
+        kw_bg = [d for d in bg_docs if any(kw in d["name"].lower() for kw in kws)]
+        kw_sv = [d for d in svg_docs if any(kw in tag.lower() for tag in d.get("tags", []) for kw in kws)]
+        kw_tp = [d for d in type_docs if any(kw in d["name"].lower() for kw in kws)]
+    else:
+        kw_bg, kw_sv, kw_tp = [], [], []
+        logger.debug("Skipping keyword matching - not enough keywords")
 
-    # merge + dedupe per category
-    merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k)
-    merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k)
-    merged_tp = merge_and_dedupe(sem_tp, kw_tp, "name", k)
+    # Merge results with semantic priority
+    merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k, priority='semantic')
+    merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k, priority='semantic')
+    merged_tp = merge_and_dedupe(sem_tp, kw_tp, "name", k, priority='semantic')
 
+    # Prepare final results
     return {
         "backgrounds": [
             {"name": d["name"], "background_url": d["background_url"]}
