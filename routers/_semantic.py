@@ -19,10 +19,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize NLTK components
-nltk.download('punkt', quiet=True)
-nltk.download('averaged_perceptron_tagger', quiet=True)
-nltk.download('wordnet', quiet=True)
-nltk.download('omw-1.4', quiet=True)
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+nltk.download('punkt_tab')
 
 lemmatizer = WordNetLemmatizer()
 model = SentenceTransformer("all-MiniLM-L6-v2")
