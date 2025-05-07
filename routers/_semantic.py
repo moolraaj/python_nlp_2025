@@ -27,7 +27,7 @@ nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger_eng')
 
 lemmatizer = WordNetLemmatizer()
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = SentenceTransformer("all-MiniLM-L6-v2" ,device="cpu")
 
 def get_wordnet_pos(treebank_tag: str) -> str:
     """Map treebank POS tags to WordNet POS tags"""
