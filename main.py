@@ -16,8 +16,8 @@ logger = logging.getLogger("uvicorn.error")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=["https://editor-2025-part-2.vercel.app","http://localhost:4500"],
+    allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
 
