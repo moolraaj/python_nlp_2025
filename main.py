@@ -1,5 +1,5 @@
-
 import logging
+import nltk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,11 +9,13 @@ from routers.svgs        import router as svgs_router
 from routers.types       import router as types_router
 from routers.search      import router as search_router
 from routers.media       import router as media_router
-from routers._semantic   import encode
+from routers._semantic   import backfill_embeddings, prep_nltk  # new imports
 
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()
+
+# your existing CORS config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,40 +23,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def backfill_embeddings():
-    async for doc in db["backgrounds"].find({"embedding": {"$exists": False}}):
-        name = doc.get("name", "")
-        emb = encode(name.lower()).tolist()
-        await db["backgrounds"].update_one(
-            {"_id": doc["_id"]},
-            {"$set": {"embedding": emb}}
-        )
-    async for doc in db["svgs"].find({"embedding": {"$exists": False}}):
-        tags = [str(tag).lower() for tag in doc.get("tags", [])]
-        emb = encode(" ".join(tags)).tolist()
-        await db["svgs"].update_one(
-            {"_id": doc["_id"]},
-            {"$set": {"embedding": emb}}
-        )
-    async for doc in db["types"].find({"embedding": {"$exists": False}}):
-        name = doc.get("name", "")
-        emb = encode(name.lower()).tolist()
-        await db["types"].update_one(
-            {"_id": doc["_id"]},
-            {"$set": {"embedding": emb}}
-        )
-
 @app.on_event("startup")
 async def startup():
+    # 1) download your NLTK data once at startup
+    prep_nltk()
+
+    # 2) make sure MongoDB is alive
     try:
         await db.client.admin.command("ping")
         logger.info("✅ MongoDB connected")
     except Exception as e:
         logger.error("❌ MongoDB connection failed: %s", e)
 
+    # 3) backfill any missing embeddings
     await backfill_embeddings()
     logger.info("🔄 Embedding backfill done")
 
+# include all your routers exactly as before
 app.include_router(backgrounds_router)
 app.include_router(svgs_router)
 app.include_router(types_router)
