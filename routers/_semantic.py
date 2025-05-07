@@ -23,6 +23,7 @@ nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger_eng')
+nltk.download('wordnet')
 
 lemmatizer = WordNetLemmatizer()
 model = SentenceTransformer("all-MiniLM-L6-v2" ,device="cpu")
