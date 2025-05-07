@@ -1,4 +1,4 @@
-# routers/svgs.py
+
 import json
 import cloudinary_config
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status

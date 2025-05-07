@@ -26,11 +26,7 @@ nltk.download('omw-1.4')
 nltk.download('punkt_tab')
 
 lemmatizer = WordNetLemmatizer()
-try:
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-except Exception as e:
-    logger.error(f"Failed to load model: {str(e)}")
-    raise
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def get_wordnet_pos(treebank_tag: str) -> str:
     """Map treebank POS tags to WordNet POS tags"""

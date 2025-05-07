@@ -1,4 +1,4 @@
-# routers/backgrounds.py
+
 import cloudinary_config  
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
 from fastapi.responses import JSONResponse
