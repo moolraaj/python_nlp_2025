@@ -117,53 +117,76 @@ async def find_assets(
     threshold: float = 0.5,
     keyword_threshold: int = 2
 ) -> Dict[str, List[Dict[str, Any]]]:
-    """Find matching assets using both semantic search and keyword matching"""
+    """Find matching assets with robust error handling."""
+    # Default empty response
+    empty_response = {"backgrounds": [], "gifs": [], "animations": []}
+    
     if not text.strip():
-        return {"backgrounds": [], "gifs": [], "animations": []}
-    
-    logger.info(f"Searching for: '{text}'")
-    
-    # Load all documents
-    bg_docs = [doc async for doc in db["backgrounds"].find()]
-    svg_docs = [doc async for doc in db["svgs"].find()]
-    type_docs = [doc async for doc in db["types"].find()]
+        return empty_response
 
-    # Semantic search
-    q_emb = encode(text)
-    sem_bg = top_k_matches(q_emb, bg_docs, "embedding", k, threshold)
-    sem_sv = top_k_matches(q_emb, svg_docs, "embedding", k, threshold)
-    sem_tp = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
+    try:
+        logger.info(f"Searching for: '{text}'")
+        
+        # --- DB QUERIES (with error handling) ---
+        try:
+            bg_docs = [doc async for doc in db["backgrounds"].find()]
+            svg_docs = [doc async for doc in db["svgs"].find()]
+            type_docs = [doc async for doc in db["types"].find()]
+        except Exception as db_error:
+            logger.error(f"Database error: {str(db_error)}")
+            return empty_response
 
-    # Keyword extraction and matching
-    kws = extract_keywords(text)
-    logger.debug(f"Final keywords used for matching: {kws}")
-    
-    # Only use keyword matching if we have enough keywords
-    if len(kws) >= keyword_threshold:
-        kw_bg = [d for d in bg_docs if any(kw in d["name"].lower() for kw in kws)]
-        kw_sv = [d for d in svg_docs if any(kw in tag.lower() for tag in d.get("tags", []) for kw in kws)]
-        kw_tp = [d for d in type_docs if any(kw in d["name"].lower() for kw in kws)]
-    else:
-        kw_bg, kw_sv, kw_tp = [], [], []
-        logger.debug("Skipping keyword matching - not enough keywords")
+        # --- SEMANTIC SEARCH (most likely to fail) ---
+        try:
+            q_emb = encode(text)  # Could OOM or timeout
+            sem_bg = top_k_matches(q_emb, bg_docs, "embedding", k, threshold)
+            sem_sv = top_k_matches(q_emb, svg_docs, "embedding", k, threshold)
+            sem_tp = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
+        except Exception as model_error:
+            logger.error(f"Model encoding error: {str(model_error)}")
+            # Fall back to keyword-only search if semantic fails
+            sem_bg, sem_sv, sem_tp = [], [], []
 
-    # Merge results with semantic priority
-    merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k, priority='semantic')
-    merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k, priority='semantic')
-    merged_tp = merge_and_dedupe(sem_tp, kw_tp, "name", k, priority='semantic')
+        # --- KEYWORD EXTRACTION (less likely to fail) ---
+        try:
+            kws = extract_keywords(text)
+            logger.debug(f"Keywords: {kws}")
 
-    # Prepare final results
-    return {
-        "backgrounds": [
-            {"name": d["name"], "background_url": d["background_url"]}
-            for d in merged_bg
-        ],
-        "gifs": [
-            {"tags": d.get("tags", []), "svg_url": d["svg_url"]}
-            for d in merged_sv
-        ],
-        "animations": [
-            {"name": d["name"]}
-            for d in merged_tp
-        ],
-    }
+            if len(kws) >= keyword_threshold:
+                kw_bg = [d for d in bg_docs if any(kw in d["name"].lower() for kw in kws)]
+                kw_sv = [d for d in svg_docs if any(kw in tag.lower() for tag in d.get("tags", []) for kw in kws)]
+                kw_tp = [d for d in type_docs if any(kw in d["name"].lower() for kw in kws)]
+            else:
+                kw_bg, kw_sv, kw_tp = [], [], []
+                logger.debug("Skipping keyword matching - not enough keywords")
+        except Exception as nltk_error:
+            logger.error(f"Keyword extraction error: {str(nltk_error)}")
+            kw_bg, kw_sv, kw_tp = [], [], []
+
+        # --- MERGE RESULTS ---
+        try:
+            merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k, 'semantic')
+            merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k, 'semantic')
+            merged_tp = merge_and_dedupe(sem_tp, kw_tp, "name", k, 'semantic')
+
+            return {
+                "backgrounds": [
+                    {"name": d["name"], "background_url": d["background_url"]}
+                    for d in merged_bg
+                ],
+                "gifs": [
+                    {"tags": d.get("tags", []), "svg_url": d["svg_url"]}
+                    for d in merged_sv
+                ],
+                "animations": [
+                    {"name": d["name"]}
+                    for d in merged_tp
+                ],
+            }
+        except Exception as merge_error:
+            logger.error(f"Result merging error: {str(merge_error)}")
+            return empty_response
+
+    except Exception as fatal_error:
+        logger.critical(f"Unexpected error in find_assets: {str(fatal_error)}")
+        return empty_response
