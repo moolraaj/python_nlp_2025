@@ -1,7 +1,6 @@
 # routers/_semantic.py
 
 import nltk
-nltk.data.path.append("./nltk_data")
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -20,24 +19,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
  
- 
- 
-nltk.download('punkt_tab')
-nltk.download('averaged_perceptron_tagger_eng')
- 
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 lemmatizer = WordNetLemmatizer()
+ 
+
 model = None
 
 def get_model():
     global model
     if model is None:
+        from sentence_transformers import SentenceTransformer
         model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
     return model
 
 def encode(text: str) -> np.ndarray:
-    """Encode text into embedding vector"""
     return get_model().encode([text], convert_to_numpy=True)[0]
+
 
 def get_wordnet_pos(treebank_tag: str) -> str:
     """Map treebank POS tags to WordNet POS tags"""
