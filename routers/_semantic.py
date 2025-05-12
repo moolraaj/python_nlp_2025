@@ -1,6 +1,7 @@
 # routers/_semantic.py
 
 import nltk
+nltk.data.path.append("./nltk_data")
 from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 from nltk.stem import WordNetLemmatizer
@@ -14,16 +15,16 @@ import logging
 
 from database import db
 
-# Configure logging
+ 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize NLTK components
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+ 
+ 
+ 
 nltk.download('punkt_tab')
 nltk.download('averaged_perceptron_tagger_eng')
-nltk.download('wordnet')
+ 
 
 lemmatizer = WordNetLemmatizer()
 model = SentenceTransformer("all-MiniLM-L6-v2" ,device="cpu")
@@ -61,7 +62,7 @@ def top_k_matches(
     sims = cosine_similarity([query_emb], embs)[0]
     paired = sorted(zip(sims, valid), key=lambda x: x[0], reverse=True)
     
-    # Log top matches for debugging
+  
     logger.debug(f"Top matches before threshold (k={k}, threshold={threshold}):")
     for sim, doc in paired[:5]:
         logger.debug(f"  Similarity: {sim:.3f} - Doc: {doc.get('name', doc.get('svg_url', 'Unknown'))}")
@@ -82,7 +83,7 @@ def extract_keywords(text: str, pos_set: Set[str] = {"NOUN", "PROPN", "VERB", "A
         if universal_tag in pos_set:
             keywords.append(lemma)
     
-    # Log extracted keywords for debugging
+ 
     logger.debug(f"Extracted keywords: {keywords}")
     return keywords
 
@@ -97,7 +98,7 @@ def merge_and_dedupe(
     merged = []
     seen = set()
     
-    # Determine merge order based on priority
+    
     first, second = (sem, kw) if priority == 'semantic' else (kw, sem)
     
     for d in first + second:
@@ -117,7 +118,7 @@ async def find_assets(
     keyword_threshold: int = 2
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Find matching assets with robust error handling."""
-    # Default empty response
+ 
     empty_response = {"backgrounds": [], "gifs": [], "animations": []}
     
     if not text.strip():
@@ -126,7 +127,7 @@ async def find_assets(
     try:
         logger.info(f"Searching for: '{text}'")
         
-        # --- DB QUERIES (with error handling) ---
+   
         try:
             bg_docs = [doc async for doc in db["backgrounds"].find()]
             svg_docs = [doc async for doc in db["svgs"].find()]
@@ -135,18 +136,18 @@ async def find_assets(
             logger.error(f"Database error: {str(db_error)}")
             return empty_response
 
-        # --- SEMANTIC SEARCH (most likely to fail) ---
+     
         try:
-            q_emb = encode(text)  # Could OOM or timeout
+            q_emb = encode(text)  
             sem_bg = top_k_matches(q_emb, bg_docs, "embedding", k, threshold)
             sem_sv = top_k_matches(q_emb, svg_docs, "embedding", k, threshold)
             sem_tp = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
         except Exception as model_error:
             logger.error(f"Model encoding error: {str(model_error)}")
-            # Fall back to keyword-only search if semantic fails
+          
             sem_bg, sem_sv, sem_tp = [], [], []
 
-        # --- KEYWORD EXTRACTION (less likely to fail) ---
+ 
         try:
             kws = extract_keywords(text)
             logger.debug(f"Keywords: {kws}")
@@ -162,7 +163,7 @@ async def find_assets(
             logger.error(f"Keyword extraction error: {str(nltk_error)}")
             kw_bg, kw_sv, kw_tp = [], [], []
 
-        # --- MERGE RESULTS ---
+    
         try:
             merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k, 'semantic')
             merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k, 'semantic')
