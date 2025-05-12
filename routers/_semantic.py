@@ -1,12 +1,6 @@
 # routers/_semantic.py
 
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk import pos_tag
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
 import time
-
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -15,17 +9,8 @@ import logging
 
 from database import db
 
- 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
- 
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-
-lemmatizer = WordNetLemmatizer()
- 
 
 model = None
 
@@ -33,32 +18,15 @@ def get_model():
     global model
     if model is None:
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("paraphrase-albert-small-v2",device="cpu")
+        model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
         start = time.time()
         model.encode(["test sentence"])
         print(f"CPU Time Used: {time.time() - start:.2f}s") 
     return model
 
 def encode(text: str) -> np.ndarray:
-    return get_model().encode([text], convert_to_numpy=True)[0]
-
-
-def get_wordnet_pos(treebank_tag: str) -> str:
-    """Map treebank POS tags to WordNet POS tags"""
-    if treebank_tag.startswith('J'):
-        return wordnet.ADJ
-    elif treebank_tag.startswith('V'):
-        return wordnet.VERB
-    elif treebank_tag.startswith('N'):
-        return wordnet.NOUN
-    elif treebank_tag.startswith('R'):
-        return wordnet.ADV
-    else:
-        return wordnet.NOUN
-
-def encode(text: str) -> np.ndarray:
     """Encode text into embedding vector"""
-    return model.encode([text], convert_to_numpy=True)[0]
+    return get_model().encode([text], convert_to_numpy=True)[0]
 
 def top_k_matches(
     query_emb: np.ndarray,
@@ -76,30 +44,11 @@ def top_k_matches(
     sims = cosine_similarity([query_emb], embs)[0]
     paired = sorted(zip(sims, valid), key=lambda x: x[0], reverse=True)
     
-  
     logger.debug(f"Top matches before threshold (k={k}, threshold={threshold}):")
     for sim, doc in paired[:5]:
         logger.debug(f"  Similarity: {sim:.3f} - Doc: {doc.get('name', doc.get('svg_url', 'Unknown'))}")
     
     return [doc for sim, doc in paired if sim >= threshold][:k]
-
-def extract_keywords(text: str, pos_set: Set[str] = {"NOUN", "PROPN", "VERB", "ADJ"}) -> List[str]:
-    """Extract and lemmatize keywords from text"""
-    tokens = word_tokenize(text)
-    tagged = pos_tag(tokens)
-    
-    keywords = []
-    for tok, tag in tagged:
-        pos = get_wordnet_pos(tag)
-        lemma = lemmatizer.lemmatize(tok.lower(), pos=pos)
-        universal_tag = nltk.map_tag('en-ptb', 'universal', tag)
-        
-        if universal_tag in pos_set:
-            keywords.append(lemma)
-    
- 
-    logger.debug(f"Extracted keywords: {keywords}")
-    return keywords
 
 def merge_and_dedupe(
     sem: List[Dict[str, Any]],
@@ -111,7 +60,6 @@ def merge_and_dedupe(
     """Merge semantic and keyword results with deduplication"""
     merged = []
     seen = set()
-    
     
     first, second = (sem, kw) if priority == 'semantic' else (kw, sem)
     
@@ -132,7 +80,6 @@ async def find_assets(
     keyword_threshold: int = 2
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Find matching assets with robust error handling."""
- 
     empty_response = {"backgrounds": [], "gifs": [], "animations": []}
     
     if not text.strip():
@@ -141,7 +88,6 @@ async def find_assets(
     try:
         logger.info(f"Searching for: '{text}'")
         
-   
         try:
             bg_docs = [doc async for doc in db["backgrounds"].find()]
             svg_docs = [doc async for doc in db["svgs"].find()]
@@ -149,7 +95,6 @@ async def find_assets(
         except Exception as db_error:
             logger.error(f"Database error: {str(db_error)}")
             return empty_response
-
      
         try:
             q_emb = encode(text)  
@@ -158,12 +103,11 @@ async def find_assets(
             sem_tp = top_k_matches(q_emb, type_docs, "embedding", k, threshold)
         except Exception as model_error:
             logger.error(f"Model encoding error: {str(model_error)}")
-          
             sem_bg, sem_sv, sem_tp = [], [], []
 
- 
+        # Simple keyword matching without NLTK
         try:
-            kws = extract_keywords(text)
+            kws = [word.lower() for word in text.split() if len(word) > 2]  # Basic keyword extraction
             logger.debug(f"Keywords: {kws}")
 
             if len(kws) >= keyword_threshold:
@@ -173,11 +117,10 @@ async def find_assets(
             else:
                 kw_bg, kw_sv, kw_tp = [], [], []
                 logger.debug("Skipping keyword matching - not enough keywords")
-        except Exception as nltk_error:
-            logger.error(f"Keyword extraction error: {str(nltk_error)}")
+        except Exception as kw_error:
+            logger.error(f"Keyword matching error: {str(kw_error)}")
             kw_bg, kw_sv, kw_tp = [], [], []
 
-    
         try:
             merged_bg = merge_and_dedupe(sem_bg, kw_bg, "name", k, 'semantic')
             merged_sv = merge_and_dedupe(sem_sv, kw_sv, "svg_url", k, 'semantic')
@@ -204,25 +147,3 @@ async def find_assets(
     except Exception as fatal_error:
         logger.critical(f"Unexpected error in find_assets: {str(fatal_error)}")
         return empty_response
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
- 
