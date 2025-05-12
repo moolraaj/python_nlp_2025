@@ -27,7 +27,17 @@ nltk.download('averaged_perceptron_tagger_eng')
  
 
 lemmatizer = WordNetLemmatizer()
-model = SentenceTransformer("all-MiniLM-L6-v2" ,device="cpu")
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+    return model
+
+def encode(text: str) -> np.ndarray:
+    """Encode text into embedding vector"""
+    return get_model().encode([text], convert_to_numpy=True)[0]
 
 def get_wordnet_pos(treebank_tag: str) -> str:
     """Map treebank POS tags to WordNet POS tags"""
