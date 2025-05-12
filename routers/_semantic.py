@@ -5,6 +5,7 @@ from nltk.tokenize import word_tokenize
 from nltk import pos_tag
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
+import time
 
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -32,7 +33,10 @@ def get_model():
     global model
     if model is None:
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+        model = SentenceTransformer("paraphrase-albert-small-v2",device="cpu")
+        start = time.time()
+        model.encode(["test sentence"])
+        print(f"CPU Time Used: {time.time() - start:.2f}s") 
     return model
 
 def encode(text: str) -> np.ndarray:
