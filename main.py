@@ -2,9 +2,6 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import   HTTPException
-
- 
 
 from database import db
 from routers.backgrounds import router as backgrounds_router
@@ -12,12 +9,11 @@ from routers.svgs        import router as svgs_router
 from routers.types       import router as types_router
 from routers.search      import router as search_router
 from routers.media       import router as media_router
-from routers._semantic   import encode,get_model
-
+from routers._semantic   import encode
 
 logger = logging.getLogger("uvicorn.error")
 
-app = FastAPI()
+app = FastAPI()        
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://editor-2025-part-2.vercel.app","http://localhost:4500"],
@@ -56,18 +52,8 @@ async def startup():
     except Exception as e:
         logger.error("❌ MongoDB connection failed: %s", e)
 
-    try:
-        _ = get_model()   
-        logger.info("✅ SentenceTransformer loaded")
-    except Exception as e:
-        logger.error(f"❌ Model load failed: {e}")
-
-    try:
-        await backfill_embeddings()
-        logger.info("🔄 Embedding backfill done")
-    except Exception as e:
-        logger.error("❌ Backfill failed: %s", e)
-
+    await backfill_embeddings()
+    logger.info("🔄 Embedding backfill done")
 
 app.include_router(backgrounds_router)
 app.include_router(svgs_router)
@@ -75,14 +61,9 @@ app.include_router(types_router)
 app.include_router(search_router)
 app.include_router(media_router)
 
-@app.get("/ready")
-async def readiness_check():
-    try:
-        await db.client.admin.command("ping")
-        return {"status": "ready"}
-    except Exception:
-        raise HTTPException(status_code=503)
-
+@app.get("/", tags=["health"])
+async def health_check():
+    return {"status": "ok", "message": "API is healthy"}
 
 
 
