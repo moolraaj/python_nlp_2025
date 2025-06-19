@@ -10,13 +10,14 @@ from routers.types       import router as types_router
 from routers.search      import router as search_router
 from routers.media       import router as media_router
 from routers._semantic   import encode
+from fastapi.staticfiles import StaticFiles
 
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI()        
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://editor-2025-part-2.vercel.app","http://localhost:4500"],
+    allow_origins=["https://editor-2025-part-2.vercel.app","http://localhost:4500","http://localhost:5500"],
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
@@ -51,7 +52,7 @@ async def startup():
         logger.info("✅ MongoDB connected")
     except Exception as e:
         logger.error("❌ MongoDB connection failed: %s", e)
-
+          
     await backfill_embeddings()
     logger.info("🔄 Embedding backfill done")
 
@@ -60,6 +61,10 @@ app.include_router(svgs_router)
 app.include_router(types_router)
 app.include_router(search_router)
 app.include_router(media_router)
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/", tags=["health"])
 async def health_check():

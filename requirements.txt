@@ -1,37 +1,55 @@
-# Web framework
-fastapi==0.115.12
-uvicorn==0.34.2
+# # Web framework
+# fastapi==0.115.12
+# uvicorn==0.34.2
 
-# HTTP & CORS
-starlette==0.46.2
-anyio==4.9.0
-h11==0.14.0
+# # HTTP & CORS
+# starlette==0.46.2
+# anyio==4.9.0
+# h11==0.14.0
 
-# Validation & uploads
-pydantic==2.11.3
-python-dotenv==1.1.0
-python-multipart==0.0.20
+# # Validation & uploads
+# pydantic==2.11.3
+# python-dotenv==1.1.0
+# python-multipart==0.0.20
 
-# MongoDB driver
+# # MongoDB driver
+# motor==3.7.0
+# pymongo==4.12.0
+
+# # Semantic / ML stack
+# numpy==2.2.5
+# sentence-transformers==4.1.0
+# torch==2.6.0
+# transformers==4.52.3
+# huggingface-hub==0.30.2
+# faiss-cpu==1.10.0
+
+# # If you use any NLTK preprocessing in _semantic.py
+# nltk==3.9.1
+
+# # If you use scikit-learn anywhere
+# scikit-learn==1.6.1
+
+# # Media endpoints
+# gTTS==2.5.4
+# requests==2.32.3
+# reportlab==4.4.1
+# cloudinary==1.44.0
+
+
+# Core
+fastapi==0.95.2
+uvicorn==0.22.0
+
+# Database
 motor==3.7.0
 pymongo==4.12.0
 
-# Semantic / ML stack
-numpy==2.2.5
-sentence-transformers==4.1.0
-torch==2.6.0
-transformers==4.51.3
-huggingface-hub==0.30.2
-faiss-cpu==1.10.0
+# Lightweight ML stack
+sentence-transformers==2.2.2  # Uses ONNX by default
+onnxruntime==1.16.3           # Replaces torch (CPU-only)
+annoy==1.17.3                 # Alternative to FAISS
 
-# If you use any NLTK preprocessing in _semantic.py
-nltk==3.9.1
-
-# If you use scikit-learn anywhere
-scikit-learn==1.6.1
-
-# Media endpoints
-gTTS==2.5.4
-requests==2.32.3
-reportlab==4.4.0
-cloudinary==1.44.0
+# NLP (keep only what's needed)
+nltk==3.8.1
+python-dotenv==1.0.0

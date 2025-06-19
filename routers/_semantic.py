@@ -31,6 +31,7 @@ model = SentenceTransformer("all-MiniLM-L6-v2" ,device="cpu")
 def get_wordnet_pos(treebank_tag: str) -> str:
     """Map treebank POS tags to WordNet POS tags"""
     if treebank_tag.startswith('J'):
+        
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
         return wordnet.VERB
