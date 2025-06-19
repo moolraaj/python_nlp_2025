@@ -37,19 +37,11 @@
 # cloudinary==1.44.0
 
 
-# Core
 fastapi==0.95.2
 uvicorn==0.22.0
-
-# Database
 motor==3.7.0
 pymongo==4.12.0
-
-# Lightweight ML stack
-sentence-transformers==2.2.2  # Uses ONNX by default
-onnxruntime==1.16.3           # Replaces torch (CPU-only)
-annoy==1.17.3                 # Alternative to FAISS
-
-# NLP (keep only what's needed)
+sentence-transformers==2.2.2  
+annoy==1.17.3                 
 nltk==3.8.1
 python-dotenv==1.0.0
