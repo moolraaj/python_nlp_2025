@@ -39,39 +39,6 @@ async def speak(req: TTSRequest):
     mp3_fp.seek(0)
     return StreamingResponse(mp3_fp, media_type="audio/mpeg")
 
-
-@router.post("/download-all-images", response_class=StreamingResponse)
-async def download_all_images(req: MultiSearchRequest):
-    buffer = BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for scene_idx, text in enumerate(req.texts, start=1):
-            assets = await find_assets(text)
-         
-            entries = [
-                (g["svg_url"], g["tags"][0] if g["tags"] else "gif")
-                for g in assets["gifs"]
-            ] + [
-                (b["background_url"], b["name"])
-                for b in assets["backgrounds"]
-            ]
-            for img_idx, (url, label) in enumerate(entries, start=1):
-                try:
-                    resp = requests.get(url, timeout=5); resp.raise_for_status()
-                    ext = os.path.splitext(urlparse(url).path)[1] or ".jpg"
-                    safe = re.sub(r'[^A-Za-z0-9_-]+', "_", label)
-                    path = f"scene_{scene_idx}/img{img_idx}_{safe}{ext}"
-                    zf.writestr(path, resp.content)
-                except:
-                    continue
-
-    buffer.seek(0)
-    return StreamingResponse(
-        buffer,
-        media_type="application/zip",
-        headers={"Content-Disposition":"attachment; filename=all_images.zip"}
-    )
-
-
 @router.post("/download-scenes-pdf", response_class=StreamingResponse)
 async def download_scenes_pdf(req: MultiSearchRequest):
     buffer = BytesIO()

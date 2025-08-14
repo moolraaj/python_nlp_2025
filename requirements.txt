@@ -34,5 +34,4 @@ scikit-learn==1.6.1
 gTTS==2.5.4
 requests==2.32.3
 reportlab==4.4.1
-cloudinary==1.44.0
 pyttsx3==2.98

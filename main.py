@@ -11,7 +11,10 @@ from routers.svgs        import router as svgs_router
 from routers.types       import router as types_router
 from routers.search      import router as search_router
 from routers.media       import router as media_router
-from routers._semantic   import encode  
+from routers._semantic   import encode 
+
+from fastapi.staticfiles import StaticFiles
+import os
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -94,6 +97,11 @@ if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 else:
     logger.warning("⚠️ 'static/' directory not found. Skipping mount.")
+
+ 
+os.makedirs("assets/svgs", exist_ok=True)
+os.makedirs("assets/backgrounds", exist_ok=True)
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")      
 
 
 @app.get("/", tags=["health"])
