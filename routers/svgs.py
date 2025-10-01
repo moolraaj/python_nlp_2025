@@ -8,7 +8,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Re
 from fastapi.responses import JSONResponse
 
 from database import db
-from ._semantic import encode
+from ._semantic import encode_async
 
 router = APIRouter(prefix="/svgs", tags=["svgs"])
 
@@ -106,7 +106,7 @@ async def create_svg(
 
     # Embedding
     tags_text = " ".join(tags_list)
-    emb = encode(tags_text).tolist()
+    emb = encode_async(tags_text).tolist()
 
     # Store both public URL and local path (local path helps on delete/update)
     result = await db["svgs"].insert_one(
@@ -157,7 +157,7 @@ async def update_svg(
                 raise ValueError()
             update_data["tags"] = tags_list
             tags_text = " ".join(tags_list)
-            update_data["embedding"] = encode(tags_text).tolist()
+            update_data["embedding"] = encode_async(tags_text).tolist()
         except ValueError:
             raise HTTPException(
                 status_code=400,

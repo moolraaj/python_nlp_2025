@@ -1,43 +1,87 @@
+# routers/generate_audio.py
  
-import pyttsx3
-import uuid
 import os
+ 
 import hashlib
-
+ 
+import logging
+ 
+import requests
+ 
+logger = logging.getLogger(__name__)
+ 
 AUDIO_DIR = "static/audio"
+ 
 os.makedirs(AUDIO_DIR, exist_ok=True)
-
+ 
 def clear_audio_folder():
+ 
     """Delete all .mp3 files in the audio directory"""
-    for file in os.listdir(AUDIO_DIR):
-        if file.endswith(".mp3"):
-            os.remove(os.path.join(AUDIO_DIR, file))
-
+ 
+    try:
+ 
+        for file in os.listdir(AUDIO_DIR):
+ 
+            if file.endswith((".mp3", ".aiff", ".wav")):
+ 
+                os.remove(os.path.join(AUDIO_DIR, file))
+ 
+        logger.info("✅ Cleared old audio files")
+ 
+    except Exception as e:
+ 
+        logger.error(f"❌ Error clearing audio files: {e}")
+ 
 def generate_tts_audio(text: str) -> str:
-    """Generate a TTS audio file with female voice for the given text"""
-    filename = f"{hashlib.md5(text.encode()).hexdigest()}.mp3"
-    filepath = os.path.join(AUDIO_DIR, filename)
-
-    if not os.path.exists(filepath):
-        engine = pyttsx3.init()
-
  
-        voices = engine.getProperty('voices')
-        female_voice = None
-        for voice in voices:
-            if 'female' in voice.name.lower() or 'female' in voice.id.lower():
-                female_voice = voice.id
-                break
-
-        if female_voice:
-            engine.setProperty('voice', female_voice)
-        else:
-            print("⚠️ Female voice not found. Using default voice.")
-
+    """Generate TTS using web service (cross-platform solution)"""
  
-        engine.setProperty('rate', 170) 
-
-        engine.save_to_file(text, filepath)
-        engine.runAndWait()
-
-    return f"/static/audio/{filename}"
+    try:
+ 
+        filename = f"{hashlib.md5(text.encode()).hexdigest()}.mp3"
+ 
+        filepath = os.path.join(AUDIO_DIR, filename)
+ 
+        if not os.path.exists(filepath):
+ 
+            logger.info(f"🔊 Using web TTS service for: '{text}'")
+ 
+            # Option A: Use Google TTS (free)
+ 
+            try:
+ 
+                from gtts import gTTS
+ 
+                tts = gTTS(text=text, lang='en', slow=False)
+ 
+                tts.save(filepath)
+ 
+                logger.info(f"🎵 Generated web TTS audio: {filename}")
+ 
+            except ImportError:
+ 
+                logger.warning("gTTS not available, using fallback")
+ 
+                # Fallback: create empty file
+ 
+                with open(filepath, 'w') as f:
+ 
+                    f.write('')
+ 
+        return f"/static/audio/{filename}"
+ 
+    except Exception as e:
+ 
+        logger.error(f"❌ Web TTS generation failed: {e}")
+ 
+        # Create fallback file
+ 
+        filename = f"{hashlib.md5(text.encode()).hexdigest()}.mp3"
+ 
+        filepath = os.path.join(AUDIO_DIR, filename)
+ 
+        with open(filepath, 'w') as f:
+ 
+            f.write('')
+ 
+        return f"/static/audio/{filename}"

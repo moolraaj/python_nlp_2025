@@ -8,7 +8,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Re
 from fastapi.responses import JSONResponse
 
 from database import db
-from ._semantic import encode
+from ._semantic import encode_async
 
 router = APIRouter(prefix="/backgrounds", tags=["backgrounds"])
 
@@ -91,7 +91,7 @@ async def create_bg(
     background_url = _public_url(request, rel_public)  # absolute URL (HttpUrl-friendly)
 
     # Embedding for semantic search
-    emb = encode(name).tolist()
+    emb = encode_async(name).tolist()
 
     result = await db["backgrounds"].insert_one({
         "name": name,
@@ -132,7 +132,7 @@ async def update_bg(
 
     if name is not None:
         update_data["name"] = name
-        update_data["embedding"] = encode(name).tolist()
+        update_data["embedding"] = encode_async(name).tolist()
 
     if file is not None:
         rel_public, local_fs = _save_upload_locally(file)
